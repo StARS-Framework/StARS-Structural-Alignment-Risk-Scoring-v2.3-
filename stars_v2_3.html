@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>StARS: Structural Alignment Risk Scoring v2.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- 
+    =============================================================================
+    INTELLECTUAL PROPERTY NOTICE - RESTRICTED SOURCE CODE
+    
+    Structural Alignment Risk Scoring (StARS) Framework
+    © 2025 Arlex Orlando Murcia Mena. All rights reserved.
+    Patent Pending.
+    
+    This software implements the proprietary Mena Dominance Law and StARS 
+    scoring algorithms. Unauthorized reproduction, reverse engineering, 
+    or distribution of this logic is strictly prohibited.
+    =============================================================================
+  -->
+
+  <!-- Load Chart.js v4.5.1 (UMD version for browser support) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-core: #020617;        /* page background */
+      --bg-panel: #0f172a;       /* panel base */
+      --text-main: #e5e7eb;      /* main text */
+      --text-muted: #9ca3af;     /* muted gray */
+      --accent-asl: #f97316;     /* ASL color */
+      --accent-cv: #6366f1;      /* CV color */
+      --accent-stars: #38bdf8;   /* StARS color */
+      --border: #1f2937;         /* borders */
+      --error: #ef4444;          /* error red */
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #020617 0%, #0f172a 100%);
+      color: var(--text-main);
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+    }
+
+    header {
+      max-width: 1200px;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      position: relative;
+    }
+
+    h1 {
+      margin: 0;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+    }
+
+    h1 span {
+      font-weight: 700;
+      color: var(--accent-stars);
+      margin-left: 6px;
+    }
+
+    .subtitle {
+      color: var(--text-main);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+
+    .subtitle-legal {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    .panel {
+      background: rgba(30, 41, 59, 0.5);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      color: var(--text-muted);
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      display: block;
+      font-weight: 700;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent-stars);
+      cursor: pointer;
+    }
+
+    .slider-asl { accent-color: var(--accent-asl) !important; }
+    .slider-cv { accent-color: var(--accent-cv) !important; }
+
+    input[type="number"] {
+      background: #020617;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px;
+      border-radius: 6px;
+      width: 60px;
+      text-align: center;
+      font-family: monospace;
+    }
+
+    .weight-tag {
+      font-size: 0.7rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .score-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .big-score {
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+
+    .asl-color { color: var(--accent-asl); }
+    .cv-color { color: var(--accent-cv); }
+
+    .mandate-box {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .mandate-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: block;
+      font-size: 1rem;
+    }
+
+    .mandate-desc {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .mandate-agent { border-color: var(--accent-asl); }
+    .mandate-structure { border-color: var(--accent-cv); }
+    .mandate-dual { border-color: var(--accent-stars); }
+
+    .chart-container {
+      height: 250px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .btn-calc {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity 0.2s;
+    }
+    .btn-calc:hover { opacity: 0.9; }
+
+    .raw-input-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      margin-top: 10px;
+    }
+
+    .btn-small {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 0.8rem;
+    }
+    .btn-small:hover { background: #334155; }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 800px;
+      line-height: 1.5;
+    }
+
+    #error_log {
+      color: var(--error);
+      background: rgba(239, 68, 68, 0.1);
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+      font-size: 0.9rem;
+      border: 1px solid var(--error);
+    }
+
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>StARS <span>V2.3</span></h1>
+    <div class="subtitle">Structural Alignment Risk Scoring — Hospital / Clinical Profile</div>
+    <div class="subtitle-legal">Patent Pending | © 2025 Arlex Orlando Murcia Mena</div>
+  </header>
+
+  <div id="error_log"></div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>Deviation Diagnostic Engine (DDE)</h2>
+
+      <div style="margin-bottom: 25px; border-left: 3px solid var(--accent-asl); padding-left: 15px;">
+        <span class="section-title asl-color">Agent Stress Load (ASL)</span>
+        
+        <div class="input-group">
+          <label><span>Burnout / Exhaustion</span><span class="weight-tag">35%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_burnout" class="slider-asl" min="0" max="100" value="40" oninput="syncInputs('burnout', this.value)">
+            <input type="number" id="val_burnout" value="40" oninput="syncInputs('burnout', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Moral Injury / Distress</span><span class="weight-tag">35%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_moral" class="slider-asl" min="0" max="100" value="30" oninput="syncInputs('moral', this.value)">
+            <input type="number" id="val_moral" value="30" oninput="syncInputs('moral', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Rule Bending (Volition)</span><span class="weight-tag">30%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_rule" class="slider-asl" min="0" max="100" value="20" oninput="syncInputs('rule', this.value)">
+            <input type="number" id="val_rule" value="20" oninput="syncInputs('rule', this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div style="border-left: 3px solid var(--accent-cv); padding-left: 15px;">
+        <span class="section-title cv-color">Code Vulnerability (CV)</span>
+        
+        <div class="input-group">
+          <label><span>Protocol Complexity</span><span class="weight-tag">25%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_complex" class="slider-cv" min="0" max="100" value="65" oninput="syncInputs('complex', this.value)">
+            <input type="number" id="val_complex" value="65" oninput="syncInputs('complex', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Conflicting KPIs</span><span class="weight-tag">20%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_kpi" class="slider-cv" min="0" max="100" value="50" oninput="syncInputs('kpi', this.value)">
+            <input type="number" id="val_kpi" value="50" oninput="syncInputs('kpi', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Unit Incident Rate</span><span class="weight-tag">20%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_incident" class="slider-cv" min="0" max="100" value="15" oninput="syncInputs('incident', this.value)">
+            <input type="number" id="val_incident" value="15" oninput="syncInputs('incident', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Policy Gaps</span><span class="weight-tag">20%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_policy" class="slider-cv" min="0" max="100" value="30" oninput="syncInputs('policy', this.value)">
+            <input type="number" id="val_policy" value="30" oninput="syncInputs('policy', this.value)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label><span>Control Failures</span><span class="weight-tag">15%</span></label>
+          <div class="input-row">
+            <input type="range" id="in_control" class="slider-cv" min="0" max="100" value="10" oninput="syncInputs('control', this.value)">
+            <input type="number" id="val_control" value="10" oninput="syncInputs('control', this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="raw-input-box">
+        <span class="section-title">Quick Intake (Rosetta Stone)</span>
+        <p>Paste <code>metric: value</code> logs below to auto-map.</p>
+        <textarea id="raw_metrics" placeholder="Example:
+burnout_index: 75
+protocol_complexity: 80
+incident_rate: 22"></textarea>
+        <button class="btn-small" onclick="applyRawToSliders()">Auto-Map to Sliders</button>
+      </div>
+
+      <button class="btn-calc" onclick="runStARS()">CALCULATE ALIGNMENT RISK</button>
+    </div>
+
+    <div class="panel">
+      <h2>Correction Decision Engine (CDE)</h2>
+
+      <div class="score-display">
+        <div style="text-align:center">
+          <div class="label asl-color">AGENT STRESS (ASL)</div>
+          <div class="big-score asl-color" id="out_asl">--</div>
+        </div>
+        <div style="text-align:center">
+          <div class="label cv-color">CODE VULN (CV)</div>
+          <div class="big-score cv-color" id="out_cv">--</div>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin: 30px 0;">
+        <div class="label" style="color: var(--accent-stars);">FINAL StARS RISK INDEX</div>
+        <div class="big-score" style="color: var(--accent-stars); font-size: 4rem; line-height:1;" id="out_stars">--</div>
+        <div id="risk_tier" style="font-weight: 700; font-size: 1.2rem; margin-top:10px; letter-spacing: 1px;">READY</div>
+      </div>
+
+      <div id="mandate_display" class="mandate-box" style="display:none;">
+        <span class="mandate-title" id="mandate_title"></span>
+        <div class="mandate-desc" id="mandate_text"></div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="starsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    StARS (Structural Alignment Risk Scoring) and the Mena Dominance Law are proprietary methods<br>
+    developed by Arlex Orlando Murcia Mena. © 2025. All rights reserved. Patent pending.
+  </footer>
+
+<script>
+  // --- ERROR HANDLING ---
+  function logError(msg) {
+    const el = document.getElementById('error_log');
+    el.style.display = 'block';
+    el.innerText = "SYSTEM ERROR: " + msg;
+    console.error(msg);
+  }
+
+  // --- CONFIG ---
+  const STARS_CONFIG = {
+    asl_burnout: 0.35, asl_moral: 0.35, asl_rule: 0.30,
+    cv_complex: 0.25, cv_kpi: 0.20, cv_incident: 0.20, cv_policy: 0.20, cv_control: 0.15,
+    w_asl: 0.5, w_cv: 0.5,
+    t_dom: 10
+  };
+
+  let myChart = null;
+
+  // --- SYNC ---
+  function syncInputs(key, val) {
+    try {
+      let v = parseFloat(val);
+      if (isNaN(v)) v = 0;
+      if (v < 0) v = 0; 
+      if (v > 100) v = 100;
+      
+      const range = document.getElementById('in_' + key);
+      const box = document.getElementById('val_' + key);
+      if (range) range.value = v;
+      if (box) box.value = v;
+    } catch (e) {
+      logError("Input sync failed: " + e.message);
+    }
+  }
+
+  // --- ROSETTA STONE PARSER ---
+  function applyRawToSliders() {
+    const text = document.getElementById('raw_metrics').value;
+    if (!text) return;
+
+    const lines = text.split(/\r?\n/);
+    const map = {
+      'burnout': 'burnout', 'exhaustion': 'burnout',
+      'moral': 'moral', 'distress': 'moral',
+      'rule': 'rule', 'volition': 'rule', 'bending': 'rule',
+      'complex': 'complex', 'complexity': 'complex',
+      'kpi': 'kpi', 'conflict': 'kpi',
+      'incident': 'incident', 'rate': 'incident',
+      'policy': 'policy', 'gap': 'policy',
+      'control': 'control', 'failure': 'control'
+    };
+
+    lines.forEach(line => {
+      const parts = line.split(/[:=]/);
+      if (parts.length >= 2) {
+        const keyRaw = parts[0].toLowerCase();
+        const valRaw = parseFloat(parts[1]);
+        
+        if (!isNaN(valRaw)) {
+          for (const [keyword, field] of Object.entries(map)) {
+            if (keyRaw.includes(keyword)) {
+              syncInputs(field, valRaw);
+              break; 
+            }
+          }
+        }
+      }
+    });
+    runStARS();
+  }
+
+  // --- CORE CALC ---
+  function runStARS() {
+    try {
+      const burnout = parseFloat(document.getElementById('val_burnout').value) || 0;
+      const moral = parseFloat(document.getElementById('val_moral').value) || 0;
+      const rule = parseFloat(document.getElementById('val_rule').value) || 0;
+
+      const complex = parseFloat(document.getElementById('val_complex').value) || 0;
+      const kpi = parseFloat(document.getElementById('val_kpi').value) || 0;
+      const incident = parseFloat(document.getElementById('val_incident').value) || 0;
+      const policy = parseFloat(document.getElementById('val_policy').value) || 0;
+      const control = parseFloat(document.getElementById('val_control').value) || 0;
+
+      const ASL = (burnout * STARS_CONFIG.asl_burnout) + (moral * STARS_CONFIG.asl_moral) + (rule * STARS_CONFIG.asl_rule);
+      const CV = (complex * STARS_CONFIG.cv_complex) + (kpi * STARS_CONFIG.cv_kpi) + (incident * STARS_CONFIG.cv_incident) + (policy * STARS_CONFIG.cv_policy) + (control * STARS_CONFIG.cv_control);
+      const StARS = (ASL * STARS_CONFIG.w_asl) + (CV * STARS_CONFIG.w_cv);
+
+      updateUI(ASL, CV, StARS);
+      determineMandate(ASL, CV);
+      renderChart(ASL, CV);
+    } catch (e) {
+      logError("Calculation failed: " + e.message);
+    }
+  }
+
+  function updateUI(asl, cv, stars) {
+    document.getElementById('out_asl').innerText = asl.toFixed(1);
+    document.getElementById('out_cv').innerText = cv.toFixed(1);
+    document.getElementById('out_stars').innerText = stars.toFixed(1);
+
+    const tierEl = document.getElementById('risk_tier');
+    if (stars > 75) { tierEl.innerText = "CRITICAL INSTABILITY"; tierEl.style.color = "#ef4444"; }
+    else if (stars > 50) { tierEl.innerText = "HIGH RISK"; tierEl.style.color = "#f97316"; }
+    else if (stars > 25) { tierEl.innerText = "MODERATE RISK"; tierEl.style.color = "#facc15"; }
+    else { tierEl.innerText = "LOW RISK"; tierEl.style.color = "#10b981"; }
+  }
+
+  function determineMandate(asl, cv) {
+    const diff = asl - cv;
+    const box = document.getElementById('mandate_display');
+    const title = document.getElementById('mandate_title');
+    const desc = document.getElementById('mandate_text');
+
+    box.style.display = "block";
+    box.className = "mandate-box";
+
+    if (diff > STARS_CONFIG.t_dom) {
+      box.classList.add("mandate-agent");
+      title.innerText = "⚠️ MANDATE: AGENT STABILIZATION";
+      title.style.color = "var(--accent-asl)";
+      desc.innerHTML = "<strong>Diagnosis:</strong> Agent Stress Dominant (ASL > CV).<br><strong>Required:</strong> Reduce workload, provide support.<br><strong>Prohibited:</strong> Adding structural complexity.";
+    } else if ((cv - asl) > STARS_CONFIG.t_dom) {
+      box.classList.add("mandate-structure");
+      title.innerText = "🛠️ MANDATE: STRUCTURAL CORRECTION";
+      title.style.color = "var(--accent-cv)";
+      desc.innerHTML = "<strong>Diagnosis:</strong> Structure Dominant (CV > ASL).<br><strong>Required:</strong> Simplify protocol, fix code/policy.<br><strong>Prohibited:</strong> Blaming or retraining agents.";
+    } else {
+      box.classList.add("mandate-dual");
+      title.innerText = "🔄 MANDATE: DUAL-PATH INTERVENTION";
+      title.style.color = "var(--accent-stars)";
+      desc.innerHTML = "<strong>Diagnosis:</strong> Mixed Dominance (Entropy High).<br><strong>Required:</strong> Simultaneous structural reform and agent support.";
+    }
+  }
+
+  function renderChart(asl, cv) {
+    const ctx = document.getElementById('starsChart').getContext('2d');
+    
+    if (typeof Chart === 'undefined') {
+      logError("Chart.js library failed to load. Check internet connection.");
+      return;
+    }
+
+    if (myChart) myChart.destroy();
+
+    // UPDATED FOR CHART.JS 4.5.1 SYNTAX
+    myChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Agent Stress (ASL)', 'Code Vulnerability (CV)', 'Alignment Gap'],
+        datasets: [{
+          label: 'Risk Profile',
+          data: [asl, cv, Math.abs(asl - cv)],
+          backgroundColor: 'rgba(56, 189, 248, 0.2)',
+          borderColor: '#38bdf8',
+          pointBackgroundColor: '#38bdf8',
+          pointBorderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { color: '#334155' },
+            grid: { color: '#334155' },
+            pointLabels: { color: '#9ca3af', font: { size: 12 } },
+            suggestedMin: 0, suggestedMax: 100,
+            ticks: { backdropColor: 'transparent', color: '#6b7280' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  window.onload = runStARS;
+</script>
+</body>
+</html>
